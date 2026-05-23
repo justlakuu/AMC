@@ -20,6 +20,14 @@ export function PropertiesPanel({ document, onDocumentChange }: Props) {
   return (
     <aside className="properties-panel">
       <h2>Parametry MOLLE</h2>
+      <label className="checkbox-label">
+        <input
+          type="checkbox"
+          checked={document.showBoltHoles}
+          onChange={(event) => onDocumentChange({ ...document, showBoltHoles: event.target.checked })}
+        />
+        Pokaż otwory śrub
+      </label>
       {Object.entries(document.molleParams).map(([key, value]) => (
         <label key={key}>
           {key}

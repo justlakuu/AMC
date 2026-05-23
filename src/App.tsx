@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useMachine } from '@xstate/react';
 import { editorMachine, type EditorMode } from './app/editorMachine';
-import type { ReferenceImage } from './app/types';
+import type { ReferenceImage, SketchTool } from './app/types';
 import { CanvasEditor } from './editor/CanvasEditor';
 import { CalibrationModal } from './editor/CalibrationModal';
 import { PropertiesPanel } from './editor/PropertiesPanel';
@@ -12,10 +12,21 @@ import './styles/app.css';
 function App() {
   const [snapshot, send] = useMachine(editorMachine);
   const [pendingImage, setPendingImage] = useState<ReferenceImage>();
+  const [activeTool, setActiveTool] = useState<SketchTool>('draw-outline');
   const document = snapshot.context.document;
   const mode = snapshot.context.mode;
+  const sketchMode = mode === 'draw-outline' || mode === 'edit-slots';
 
-  const setMode = (nextMode: EditorMode) => send({ type: 'SET_MODE', mode: nextMode });
+  const setMode = (nextMode: EditorMode) => {
+    if (nextMode === 'preview-3d' && !document.outlineClosed) {
+      return;
+    }
+
+    send({ type: 'SET_MODE', mode: nextMode });
+    if ((nextMode === 'draw-outline' || nextMode === 'edit-slots') && activeTool === 'toggle-slots' && !document.outlineClosed) {
+      setActiveTool('draw-outline');
+    }
+  };
   const setDocument = (nextDocument: typeof document) => send({ type: 'SET_DOCUMENT', document: nextDocument });
 
   const importImage = (file?: File) => {
@@ -61,7 +72,7 @@ function App() {
         </div>
         <nav>
           {(['draw-outline', 'edit-slots', 'preview-3d'] as EditorMode[]).map((item) => (
-            <button key={item} type="button" className={mode === item ? 'active' : ''} onClick={() => setMode(item)}>{item}</button>
+            <button key={item} type="button" className={mode === item ? 'active' : ''} disabled={item === 'preview-3d' && !document.outlineClosed} onClick={() => setMode(item)}>{item}</button>
           ))}
           <label className="file-button">
             Import zdjęcia
@@ -72,8 +83,19 @@ function App() {
         </nav>
       </header>
 
+      {sketchMode && (
+        <div className="sketch-toolbar">
+          <strong>Sketch</strong>
+          <button type="button" className={activeTool === 'select' ? 'active' : ''} onClick={() => setActiveTool('select')}>Zaznacz / Pan</button>
+          <button type="button" className={activeTool === 'draw-outline' ? 'active' : ''} disabled={document.outlineClosed || mode === 'edit-slots'} onClick={() => setActiveTool('draw-outline')}>Rysuj obrys</button>
+          <button type="button" className={activeTool === 'move-points' ? 'active' : ''} disabled={document.outline.length === 0} onClick={() => setActiveTool('move-points')}>Przesuwaj punkty</button>
+          <button type="button" className={activeTool === 'toggle-slots' ? 'active' : ''} disabled={!document.outlineClosed} onClick={() => setActiveTool('toggle-slots')}>Aktywuj/deaktywuj sloty</button>
+          <span>{document.outlineClosed ? 'Obrys zamknięty' : 'Zamknij obrys, żeby generować i edytować sloty'}</span>
+        </div>
+      )}
+
       <section className="workspace">
-        {mode === 'preview-3d' ? <Preview3D document={document} /> : <CanvasEditor document={document} mode={mode} onDocumentChange={setDocument} />}
+        {mode === 'preview-3d' ? <Preview3D document={document} /> : <CanvasEditor document={document} mode={mode} activeTool={activeTool} onDocumentChange={setDocument} />}
         <PropertiesPanel document={document} onDocumentChange={setDocument} />
       </section>
 

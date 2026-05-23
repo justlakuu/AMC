@@ -41,6 +41,8 @@ export type Slot = {
   autoDisabledReason?: 'outside-outline' | 'edge-margin';
 };
 
+export type SketchTool = 'select' | 'draw-outline' | 'move-points' | 'toggle-slots';
+
 export type DocumentModel = {
   units: 'mm';
   image?: ReferenceImage;
@@ -49,6 +51,7 @@ export type DocumentModel = {
   molleParams: MolleParams;
   slots: Slot[];
   disabledSlotIds: string[];
+  showBoltHoles: boolean;
 };
 
 export const defaultMolleParams: MolleParams = {
@@ -70,4 +73,5 @@ export const defaultDocument: DocumentModel = {
   molleParams: defaultMolleParams,
   slots: [],
   disabledSlotIds: [],
+  showBoltHoles: true,
 };

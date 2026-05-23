@@ -50,6 +50,25 @@ button.active {
   border-bottom: 1px solid #d0d7de;
 }
 
+.sketch-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 52px;
+  padding: 8px 20px;
+  border-bottom: 1px solid #d0d7de;
+  background: #ffffff;
+}
+
+.sketch-toolbar strong {
+  margin-right: 6px;
+}
+
+.sketch-toolbar span {
+  margin-left: auto;
+  color: #57606a;
+}
+
 .topbar h1 {
   margin: 0;
   letter-spacing: -0.03em;
@@ -72,13 +91,18 @@ button.active {
 .workspace {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 360px;
-  height: calc(100vh - 72px);
+  height: calc(100vh - 124px);
 }
 
 .canvas-shell {
   position: relative;
   overflow: hidden;
   background: #f6f8fa;
+}
+
+.canvas-shell.sketch-active {
+  outline: 3px solid #087ea4;
+  outline-offset: -3px;
 }
 
 .canvas-actions {
@@ -107,6 +131,16 @@ button.active {
   gap: 6px;
   margin-bottom: 12px;
   color: #213547;
+}
+
+.properties-panel .checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.properties-panel .checkbox-label input {
+  width: auto;
 }
 
 .properties-panel input,
