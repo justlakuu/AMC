@@ -41,7 +41,7 @@ export type Slot = {
   autoDisabledReason?: 'outside-outline' | 'edge-margin';
 };
 
-export type SketchTool = 'select' | 'draw-outline' | 'move-points' | 'toggle-slots';
+export type SketchTool = 'select' | 'draw-outline' | 'toggle-slots';
 
 export type DocumentModel = {
   units: 'mm';

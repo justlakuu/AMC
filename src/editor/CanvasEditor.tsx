@@ -179,8 +179,8 @@ export function CanvasEditor({ document, mode, activeTool, onDocumentChange }: P
             {document.outline.map((point, index) => (
               <Group
                 key={`${point.x}-${point.y}`}
-                listening={(mode === 'draw-outline' || mode === 'edit-slots') && activeTool === 'move-points'}
-                draggable={(mode === 'draw-outline' || mode === 'edit-slots') && activeTool === 'move-points'}
+                listening={(mode === 'draw-outline' || mode === 'edit-slots') && activeTool === 'select'}
+                draggable={(mode === 'draw-outline' || mode === 'edit-slots') && activeTool === 'select'}
                 onDragMove={(event) => {
                   const nextOutline = document.outline.map((outlinePoint, pointIndex) => (
                     pointIndex === index ? { x: event.target.x(), y: event.target.y() } : outlinePoint
@@ -199,7 +199,7 @@ export function CanvasEditor({ document, mode, activeTool, onDocumentChange }: P
                 <Circle
                   x={0}
                   y={0}
-                  radius={index === 0 && closingHover ? 9 : activeTool === 'move-points' ? 6 : 4}
+                  radius={index === 0 && closingHover ? 9 : activeTool === 'select' ? 6 : 4}
                   fill={index === 0 && closingHover ? '#ffffff' : '#087ea4'}
                   stroke={index === 0 && closingHover ? '#087ea4' : '#ffffff'}
                   strokeWidth={index === 0 && closingHover ? 3 : 1.5}

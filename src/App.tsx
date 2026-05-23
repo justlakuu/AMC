@@ -86,9 +86,8 @@ function App() {
       {sketchMode && (
         <div className="sketch-toolbar">
           <strong>Sketch</strong>
-          <button type="button" className={activeTool === 'select' ? 'active' : ''} onClick={() => setActiveTool('select')}>Zaznacz / Pan</button>
+          <button type="button" className={activeTool === 'select' ? 'active' : ''} onClick={() => setActiveTool('select')}>Selection</button>
           <button type="button" className={activeTool === 'draw-outline' ? 'active' : ''} disabled={document.outlineClosed || mode === 'edit-slots'} onClick={() => setActiveTool('draw-outline')}>Rysuj obrys</button>
-          <button type="button" className={activeTool === 'move-points' ? 'active' : ''} disabled={document.outline.length === 0} onClick={() => setActiveTool('move-points')}>Przesuwaj punkty</button>
           <button type="button" className={activeTool === 'toggle-slots' ? 'active' : ''} disabled={!document.outlineClosed} onClick={() => setActiveTool('toggle-slots')}>Aktywuj/deaktywuj sloty</button>
           <span>{document.outlineClosed ? 'Obrys zamknięty' : 'Zamknij obrys, żeby generować i edytować sloty'}</span>
         </div>
