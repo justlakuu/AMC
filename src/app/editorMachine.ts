@@ -1,4 +1,4 @@
-import { setup } from 'xstate';
+import { assign, setup } from 'xstate';
 import type { DocumentModel } from './types';
 import { defaultDocument } from './types';
 
@@ -25,20 +25,24 @@ export const editorMachine = setup({
     events: {} as EditorEvent,
   },
   actions: {
-    setMode: ({ context, event }) => {
+    setMode: assign(({ event }) => {
       if (event.type === 'SET_MODE') {
-        context.mode = event.mode;
+        return { mode: event.mode };
       }
-    },
-    setDocument: ({ context, event }) => {
+
+      return {};
+    }),
+    setDocument: assign(({ event }) => {
       if (event.type === 'SET_DOCUMENT') {
-        context.document = event.document;
+        return { document: event.document };
       }
-    },
-    resetDocument: ({ context }) => {
-      context.document = structuredClone(defaultDocument);
-      context.mode = 'select';
-    },
+
+      return {};
+    }),
+    resetDocument: assign({
+      document: () => structuredClone(defaultDocument),
+      mode: () => 'draw-outline' as const,
+    }),
   },
 }).createMachine({
   id: 'amc-editor',
