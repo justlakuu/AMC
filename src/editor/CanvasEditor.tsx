@@ -37,8 +37,8 @@ export function CanvasEditor({ document, mode, onDocumentChange }: Props) {
     }
 
     return {
-      x: (pointer.x - stage.x()) / stage.scaleX(),
-      y: (pointer.y - stage.y()) / stage.scaleY(),
+      x: (pointer.x - stagePosition.x) / stageScale,
+      y: (pointer.y - stagePosition.y) / stageScale,
     };
   };
 
@@ -91,10 +91,10 @@ export function CanvasEditor({ document, mode, onDocumentChange }: Props) {
       return;
     }
 
-    const oldScale = stage.scaleX();
+    const oldScale = stageScale;
     const mousePointTo = {
-      x: (pointer.x - stage.x()) / oldScale,
-      y: (pointer.y - stage.y()) / oldScale,
+      x: (pointer.x - stagePosition.x) / oldScale,
+      y: (pointer.y - stagePosition.y) / oldScale,
     };
     const newScale = event.evt.deltaY > 0 ? oldScale / scaleBy : oldScale * scaleBy;
     setStageScale(newScale);
@@ -115,68 +115,71 @@ export function CanvasEditor({ document, mode, onDocumentChange }: Props) {
         ref={stageRef}
         width={window.innerWidth - 420}
         height={window.innerHeight - 96}
-        x={stagePosition.x}
-        y={stagePosition.y}
-        scaleX={stageScale}
-        scaleY={stageScale}
-        draggable={mode !== 'draw-outline'}
-        onDragEnd={(event) => setStagePosition({ x: event.target.x(), y: event.target.y() })}
         onMouseDown={handlePointerDown}
         onTouchStart={handlePointerDown}
         onWheel={handleWheel}
       >
-        <Layer listening={false}>
-          {Array.from({ length: 80 }).map((_, index) => (
-            <Line key={`v-${index}`} points={[index * 25, -1000, index * 25, 2200]} stroke={index % 4 === 0 ? '#d0d7de' : '#eef2f7'} strokeWidth={1} />
-          ))}
-          {Array.from({ length: 80 }).map((_, index) => (
-            <Line key={`h-${index}`} points={[-1000, index * 25, 2200, index * 25]} stroke={index % 4 === 0 ? '#d0d7de' : '#eef2f7'} strokeWidth={1} />
-          ))}
-        </Layer>
-
         <Layer>
-          {document.image && image && (
-            <KonvaImage
-              image={image}
-              x={document.image.position.x}
-              y={document.image.position.y}
-              width={document.image.width * document.image.scale}
-              height={document.image.height * document.image.scale}
-              opacity={document.image.opacity}
-              listening={false}
-            />
-          )}
-
-          {document.outline.length > 0 && (
-            <Line points={outlinePoints} closed={document.outlineClosed} fill="rgba(97, 218, 251, 0.18)" stroke="#087ea4" strokeWidth={2} listening={false} />
-          )}
-
-          {document.outline.map((point, index) => (
-            <Group key={`${point.x}-${point.y}`} listening={false}>
-              <Circle x={point.x} y={point.y} radius={4} fill="#087ea4" />
-              <Text x={point.x + 6} y={point.y - 14} text={`${index + 1}`} fill="#1f2328" fontSize={11} />
+          <Group
+            x={stagePosition.x}
+            y={stagePosition.y}
+            scaleX={stageScale}
+            scaleY={stageScale}
+            draggable={mode !== 'draw-outline'}
+            onDragEnd={(event) => setStagePosition({ x: event.target.x(), y: event.target.y() })}
+          >
+            <Group listening={false}>
+              {Array.from({ length: 80 }).map((_, index) => (
+                <Line key={`v-${index}`} points={[index * 25, -1000, index * 25, 2200]} stroke={index % 4 === 0 ? '#d0d7de' : '#eef2f7'} strokeWidth={1} />
+              ))}
+              {Array.from({ length: 80 }).map((_, index) => (
+                <Line key={`h-${index}`} points={[-1000, index * 25, 2200, index * 25]} stroke={index % 4 === 0 ? '#d0d7de' : '#eef2f7'} strokeWidth={1} />
+              ))}
             </Group>
-          ))}
 
-          {document.slots.map((slot) => (
-            <Rect
-              key={slot.id}
-              x={slot.x}
-              y={slot.y}
-              width={slot.width}
-              height={slot.height}
-              fill={slot.enabled ? '#f8fafc' : 'rgba(248, 113, 113, 0.25)'}
-              stroke={slot.enabled ? '#94a3b8' : '#ef4444'}
-              dash={slot.enabled ? undefined : [6, 4]}
-              listening={mode === 'edit-slots'}
-              onClick={(event) => {
-                event.cancelBubble = true;
-                if (mode === 'edit-slots' && !slot.autoDisabledReason) {
-                  toggleSlot(slot.id);
-                }
-              }}
-            />
-          ))}
+            {document.image && image && (
+              <KonvaImage
+                image={image}
+                x={document.image.position.x}
+                y={document.image.position.y}
+                width={document.image.width * document.image.scale}
+                height={document.image.height * document.image.scale}
+                opacity={document.image.opacity}
+                listening={false}
+              />
+            )}
+
+            {document.outline.length > 0 && (
+              <Line points={outlinePoints} closed={document.outlineClosed} fill="rgba(97, 218, 251, 0.18)" stroke="#087ea4" strokeWidth={2} listening={false} />
+            )}
+
+            {document.outline.map((point, index) => (
+              <Group key={`${point.x}-${point.y}`} listening={false}>
+                <Circle x={point.x} y={point.y} radius={4} fill="#087ea4" />
+                <Text x={point.x + 6} y={point.y - 14} text={`${index + 1}`} fill="#1f2328" fontSize={11} />
+              </Group>
+            ))}
+
+            {document.slots.map((slot) => (
+              <Rect
+                key={slot.id}
+                x={slot.x}
+                y={slot.y}
+                width={slot.width}
+                height={slot.height}
+                fill={slot.enabled ? '#f8fafc' : 'rgba(248, 113, 113, 0.25)'}
+                stroke={slot.enabled ? '#94a3b8' : '#ef4444'}
+                dash={slot.enabled ? undefined : [6, 4]}
+                listening={mode === 'edit-slots'}
+                onClick={(event) => {
+                  event.cancelBubble = true;
+                  if (mode === 'edit-slots' && !slot.autoDisabledReason) {
+                    toggleSlot(slot.id);
+                  }
+                }}
+              />
+            ))}
+          </Group>
         </Layer>
       </Stage>
     </div>
