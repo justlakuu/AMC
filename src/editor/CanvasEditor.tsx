@@ -42,7 +42,11 @@ export function CanvasEditor({ document, mode, onDocumentChange }: Props) {
     };
   };
 
-  const handleClick = () => {
+  const handlePointerDown = (event: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
+    if (event.evt instanceof MouseEvent && event.evt.button !== 0) {
+      return;
+    }
+
     const pointer = getPointer();
     if (!pointer) {
       return;
@@ -117,19 +121,20 @@ export function CanvasEditor({ document, mode, onDocumentChange }: Props) {
         scaleY={stageScale}
         draggable={mode !== 'draw-outline'}
         onDragEnd={(event) => setStagePosition({ x: event.target.x(), y: event.target.y() })}
-        onClick={handleClick}
+        onMouseDown={handlePointerDown}
+        onTouchStart={handlePointerDown}
         onWheel={handleWheel}
       >
         <Layer listening={false}>
           {Array.from({ length: 80 }).map((_, index) => (
-            <Line key={`v-${index}`} points={[index * 25, -1000, index * 25, 2200]} stroke={index % 4 === 0 ? '#203047' : '#172033'} strokeWidth={1} />
+            <Line key={`v-${index}`} points={[index * 25, -1000, index * 25, 2200]} stroke={index % 4 === 0 ? '#d0d7de' : '#eef2f7'} strokeWidth={1} />
           ))}
           {Array.from({ length: 80 }).map((_, index) => (
-            <Line key={`h-${index}`} points={[-1000, index * 25, 2200, index * 25]} stroke={index % 4 === 0 ? '#203047' : '#172033'} strokeWidth={1} />
+            <Line key={`h-${index}`} points={[-1000, index * 25, 2200, index * 25]} stroke={index % 4 === 0 ? '#d0d7de' : '#eef2f7'} strokeWidth={1} />
           ))}
         </Layer>
 
-        <Layer>
+        <Layer listening={mode !== 'draw-outline'}>
           {document.image && image && (
             <KonvaImage
               image={image}
@@ -142,13 +147,13 @@ export function CanvasEditor({ document, mode, onDocumentChange }: Props) {
           )}
 
           {document.outline.length > 0 && (
-            <Line points={outlinePoints} closed={document.outlineClosed} fill="rgba(202, 177, 84, 0.28)" stroke="#eab308" strokeWidth={2} />
+            <Line points={outlinePoints} closed={document.outlineClosed} fill="rgba(97, 218, 251, 0.18)" stroke="#087ea4" strokeWidth={2} />
           )}
 
           {document.outline.map((point, index) => (
             <Group key={`${point.x}-${point.y}`}>
-              <Circle x={point.x} y={point.y} radius={4} fill="#facc15" />
-              <Text x={point.x + 6} y={point.y - 14} text={`${index + 1}`} fill="#f8fafc" fontSize={11} />
+              <Circle x={point.x} y={point.y} radius={4} fill="#087ea4" />
+              <Text x={point.x + 6} y={point.y - 14} text={`${index + 1}`} fill="#1f2328" fontSize={11} />
             </Group>
           ))}
 
