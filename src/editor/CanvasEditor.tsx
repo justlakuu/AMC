@@ -31,6 +31,9 @@ export function CanvasEditor({ document, mode, activeTool, onDocumentChange }: P
   const [stageScale, setStageScale] = useState(1);
   const [stagePosition, setStagePosition] = useState({ x: 40, y: 40 });
   const [closingHover, setClosingHover] = useState(false);
+  const [selectedPointIndex, setSelectedPointIndex] = useState<number>();
+  const [selectedEdgeIndex, setSelectedEdgeIndex] = useState<number>();
+  const [panStart, setPanStart] = useState<{ pointer: { x: number; y: number }; stagePosition: { x: number; y: number } }>();
 
   const getPointer = () => {
     const stage = stageRef.current;
@@ -47,6 +50,17 @@ export function CanvasEditor({ document, mode, activeTool, onDocumentChange }: P
 
   const handlePointerDown = (event: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
     if (event.evt instanceof MouseEvent && event.evt.button !== 0) {
+      return;
+    }
+
+    if (activeTool === 'select') {
+      const stage = stageRef.current;
+      const pointer = stage?.getPointerPosition();
+      if (pointer && event.target === stage) {
+        setPanStart({ pointer, stagePosition });
+        setSelectedPointIndex(undefined);
+        setSelectedEdgeIndex(undefined);
+      }
       return;
     }
 
@@ -72,6 +86,16 @@ export function CanvasEditor({ document, mode, activeTool, onDocumentChange }: P
   };
 
   const handlePointerMove = () => {
+    const stage = stageRef.current;
+    const rawPointer = stage?.getPointerPosition();
+    if (panStart && rawPointer) {
+      setStagePosition({
+        x: panStart.stagePosition.x + rawPointer.x - panStart.pointer.x,
+        y: panStart.stagePosition.y + rawPointer.y - panStart.pointer.y,
+      });
+      return;
+    }
+
     const pointer = getPointer();
     if (!pointer || mode !== 'draw-outline' || activeTool !== 'draw-outline' || document.outlineClosed || document.outline.length < 3) {
       setClosingHover(false);
@@ -80,6 +104,8 @@ export function CanvasEditor({ document, mode, activeTool, onDocumentChange }: P
 
     setClosingHover(distance(pointer, document.outline[0]) <= 12 / stageScale);
   };
+
+  const finishPan = () => setPanStart(undefined);
 
   const closeOutline = () => {
     if (document.outline.length < 3) {
@@ -121,6 +147,10 @@ export function CanvasEditor({ document, mode, activeTool, onDocumentChange }: P
   };
 
   const outlinePoints = document.outline.flatMap((point) => [point.x, point.y]);
+  const edgeSegments = document.outline.map((point, index) => {
+    const nextPoint = document.outline[index === document.outline.length - 1 ? 0 : index + 1];
+    return { index, point, nextPoint };
+  }).filter(({ index }) => document.outlineClosed || index < document.outline.length - 1);
   const enabledSlots = document.slots.filter((slot) => slot.enabled);
 
   return (
@@ -139,7 +169,12 @@ export function CanvasEditor({ document, mode, activeTool, onDocumentChange }: P
         onTouchStart={handlePointerDown}
         onMouseMove={handlePointerMove}
         onTouchMove={handlePointerMove}
-        onMouseLeave={() => setClosingHover(false)}
+        onMouseUp={finishPan}
+        onTouchEnd={finishPan}
+        onMouseLeave={() => {
+          setClosingHover(false);
+          finishPan();
+        }}
         onWheel={handleWheel}
       >
         <Layer>
@@ -148,8 +183,6 @@ export function CanvasEditor({ document, mode, activeTool, onDocumentChange }: P
             y={stagePosition.y}
             scaleX={stageScale}
             scaleY={stageScale}
-            draggable={mode !== 'draw-outline' || activeTool === 'select'}
-            onDragEnd={(event) => setStagePosition({ x: event.target.x(), y: event.target.y() })}
           >
             <Group listening={false}>
               {Array.from({ length: 80 }).map((_, index) => (
@@ -176,22 +209,51 @@ export function CanvasEditor({ document, mode, activeTool, onDocumentChange }: P
               <Line points={outlinePoints} closed={document.outlineClosed} fill="rgba(97, 218, 251, 0.18)" stroke="#087ea4" strokeWidth={2} listening={false} />
             )}
 
+            {edgeSegments.map(({ index, point, nextPoint }) => (
+              <Line
+                key={`edge-${index}`}
+                points={[point.x, point.y, nextPoint.x, nextPoint.y]}
+                stroke={selectedEdgeIndex === index ? '#f97316' : 'transparent'}
+                strokeWidth={selectedEdgeIndex === index ? 8 : 14}
+                opacity={selectedEdgeIndex === index ? 0.85 : 0}
+                listening={(mode === 'draw-outline' || mode === 'edit-slots') && activeTool === 'select'}
+                onClick={(event) => {
+                  event.cancelBubble = true;
+                  setSelectedPointIndex(undefined);
+                  setSelectedEdgeIndex(index);
+                }}
+              />
+            ))}
+
             {document.outline.map((point, index) => (
               <Group
                 key={`${point.x}-${point.y}`}
                 listening={(mode === 'draw-outline' || mode === 'edit-slots') && activeTool === 'select'}
                 draggable={(mode === 'draw-outline' || mode === 'edit-slots') && activeTool === 'select'}
                 onDragMove={(event) => {
+                  event.cancelBubble = true;
                   const nextOutline = document.outline.map((outlinePoint, pointIndex) => (
                     pointIndex === index ? { x: event.target.x(), y: event.target.y() } : outlinePoint
                   ));
                   onDocumentChange(regenerateSlots({ ...document, outline: nextOutline }));
                 }}
                 onDragEnd={(event) => {
+                  event.cancelBubble = true;
                   const nextOutline = document.outline.map((outlinePoint, pointIndex) => (
                     pointIndex === index ? { x: event.target.x(), y: event.target.y() } : outlinePoint
                   ));
                   onDocumentChange(regenerateSlots({ ...document, outline: nextOutline }));
+                }}
+                onMouseDown={(event) => {
+                  event.cancelBubble = true;
+                  setSelectedPointIndex(index);
+                  setSelectedEdgeIndex(undefined);
+                  setPanStart(undefined);
+                }}
+                onClick={(event) => {
+                  event.cancelBubble = true;
+                  setSelectedPointIndex(index);
+                  setSelectedEdgeIndex(undefined);
                 }}
                 x={point.x}
                 y={point.y}
@@ -199,10 +261,10 @@ export function CanvasEditor({ document, mode, activeTool, onDocumentChange }: P
                 <Circle
                   x={0}
                   y={0}
-                  radius={index === 0 && closingHover ? 9 : activeTool === 'select' ? 6 : 4}
-                  fill={index === 0 && closingHover ? '#ffffff' : '#087ea4'}
+                  radius={selectedPointIndex === index ? 8 : index === 0 && closingHover ? 9 : activeTool === 'select' ? 6 : 4}
+                  fill={index === 0 && closingHover ? '#ffffff' : selectedPointIndex === index ? '#f97316' : '#087ea4'}
                   stroke={index === 0 && closingHover ? '#087ea4' : '#ffffff'}
-                  strokeWidth={index === 0 && closingHover ? 3 : 1.5}
+                  strokeWidth={(index === 0 && closingHover) || selectedPointIndex === index ? 3 : 1.5}
                 />
                 <Text x={6} y={-14} text={`${index + 1}`} fill="#1f2328" fontSize={11} />
               </Group>
