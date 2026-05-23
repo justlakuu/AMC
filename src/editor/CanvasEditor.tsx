@@ -134,7 +134,7 @@ export function CanvasEditor({ document, mode, onDocumentChange }: Props) {
           ))}
         </Layer>
 
-        <Layer listening={mode !== 'draw-outline'}>
+        <Layer>
           {document.image && image && (
             <KonvaImage
               image={image}
@@ -143,15 +143,16 @@ export function CanvasEditor({ document, mode, onDocumentChange }: Props) {
               width={document.image.width * document.image.scale}
               height={document.image.height * document.image.scale}
               opacity={document.image.opacity}
+              listening={false}
             />
           )}
 
           {document.outline.length > 0 && (
-            <Line points={outlinePoints} closed={document.outlineClosed} fill="rgba(97, 218, 251, 0.18)" stroke="#087ea4" strokeWidth={2} />
+            <Line points={outlinePoints} closed={document.outlineClosed} fill="rgba(97, 218, 251, 0.18)" stroke="#087ea4" strokeWidth={2} listening={false} />
           )}
 
           {document.outline.map((point, index) => (
-            <Group key={`${point.x}-${point.y}`}>
+            <Group key={`${point.x}-${point.y}`} listening={false}>
               <Circle x={point.x} y={point.y} radius={4} fill="#087ea4" />
               <Text x={point.x + 6} y={point.y - 14} text={`${index + 1}`} fill="#1f2328" fontSize={11} />
             </Group>
@@ -167,6 +168,7 @@ export function CanvasEditor({ document, mode, onDocumentChange }: Props) {
               fill={slot.enabled ? '#f8fafc' : 'rgba(248, 113, 113, 0.25)'}
               stroke={slot.enabled ? '#94a3b8' : '#ef4444'}
               dash={slot.enabled ? undefined : [6, 4]}
+              listening={mode === 'edit-slots'}
               onClick={(event) => {
                 event.cancelBubble = true;
                 if (mode === 'edit-slots' && !slot.autoDisabledReason) {
