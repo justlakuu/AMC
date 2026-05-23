@@ -4,6 +4,7 @@ import type Konva from 'konva';
 import type { DocumentModel, ReferenceImage, SketchTool } from '../app/types';
 import type { EditorMode } from '../app/editorMachine';
 import { regenerateSlots } from '../geometry/molleGenerator';
+import { distance } from '../geometry/polygon';
 
 type Props = {
   document: DocumentModel;
@@ -29,6 +30,7 @@ export function CanvasEditor({ document, mode, activeTool, onDocumentChange }: P
   const image = useCanvasImage(document.image);
   const [stageScale, setStageScale] = useState(1);
   const [stagePosition, setStagePosition] = useState({ x: 40, y: 40 });
+  const [closingHover, setClosingHover] = useState(false);
 
   const getPointer = () => {
     const stage = stageRef.current;
@@ -54,6 +56,12 @@ export function CanvasEditor({ document, mode, activeTool, onDocumentChange }: P
     }
 
     if (mode === 'draw-outline' && activeTool === 'draw-outline' && !document.outlineClosed) {
+      if (document.outline.length >= 3 && distance(pointer, document.outline[0]) <= 12 / stageScale) {
+        onDocumentChange(regenerateSlots({ ...document, outlineClosed: true }));
+        setClosingHover(false);
+        return;
+      }
+
       const next = {
         ...document,
         outline: [...document.outline, pointer],
@@ -61,6 +69,16 @@ export function CanvasEditor({ document, mode, activeTool, onDocumentChange }: P
       };
       onDocumentChange(regenerateSlots(next));
     }
+  };
+
+  const handlePointerMove = () => {
+    const pointer = getPointer();
+    if (!pointer || mode !== 'draw-outline' || activeTool !== 'draw-outline' || document.outlineClosed || document.outline.length < 3) {
+      setClosingHover(false);
+      return;
+    }
+
+    setClosingHover(distance(pointer, document.outline[0]) <= 12 / stageScale);
   };
 
   const closeOutline = () => {
@@ -119,6 +137,9 @@ export function CanvasEditor({ document, mode, activeTool, onDocumentChange }: P
         height={window.innerHeight - (mode === 'draw-outline' || mode === 'edit-slots' ? 148 : 96)}
         onMouseDown={handlePointerDown}
         onTouchStart={handlePointerDown}
+        onMouseMove={handlePointerMove}
+        onTouchMove={handlePointerMove}
+        onMouseLeave={() => setClosingHover(false)}
         onWheel={handleWheel}
       >
         <Layer>
@@ -175,7 +196,14 @@ export function CanvasEditor({ document, mode, activeTool, onDocumentChange }: P
                 x={point.x}
                 y={point.y}
               >
-                <Circle x={0} y={0} radius={activeTool === 'move-points' ? 6 : 4} fill="#087ea4" stroke="#ffffff" strokeWidth={1.5} />
+                <Circle
+                  x={0}
+                  y={0}
+                  radius={index === 0 && closingHover ? 9 : activeTool === 'move-points' ? 6 : 4}
+                  fill={index === 0 && closingHover ? '#ffffff' : '#087ea4'}
+                  stroke={index === 0 && closingHover ? '#087ea4' : '#ffffff'}
+                  strokeWidth={index === 0 && closingHover ? 3 : 1.5}
+                />
                 <Text x={6} y={-14} text={`${index + 1}`} fill="#1f2328" fontSize={11} />
               </Group>
             ))}
